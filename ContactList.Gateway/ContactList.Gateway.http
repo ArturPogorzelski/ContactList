@@ -1,0 +1,6 @@
+@ContactList.Gateway_HostAddress = http://localhost:5008
+
+GET {{ContactList.Gateway_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

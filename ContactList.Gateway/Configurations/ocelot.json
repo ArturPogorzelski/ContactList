@@ -1,0 +1,65 @@
+{
+  "Routes": [ // Tablica definiująca trasy (przekierowania)
+    {
+      "DownstreamPathTemplate": "/api/v1/{everything}", // Ścieżka żądania, które ma być przekierowane do usługi ContactList.API. {everything} oznacza dowolny ciąg znaków.
+      "DownstreamScheme": "http", // Protokół używany do komunikacji z ContactList.API (http lub https)
+      "DownstreamHostAndPorts": [ // Adres i port, pod którym działa ContactList.API
+        {
+          "Host": "localhost",
+          "Port": 5000
+        }
+      ],
+      "UpstreamPathTemplate": "/api/{everything}", // Ścieżka żądania, które ma być obsługiwane przez bramę API (ContactList.Gateway)
+      "UpstreamHttpMethod": [ "Get", "Post", "Put", "Delete" ], // Lista dozwolonych metod HTTP dla tej trasy
+
+      "AuthenticationOptions": { // Ustawienia uwierzytelniania
+        "AuthenticationProviderKey": "JwtBearer", // Typ uwierzytelniania - w tym przypadku JWT Bearer
+        "AllowedScopes": [] // (Opcjonalnie) Lista dozwolonych zakresów (scopes) tokenu JWT
+      },
+
+      "DelegatingHandlers": [ // Polityki Polly dla odporności na błędy
+        {
+          "HandlerName": "PollyRetry",
+          "Args": {
+            "RetryCount": 3,
+            "RetryInterval": 2000
+          }
+        }, // Polityka ponawiania prób: 3 próby, co 2 sekundy
+        {
+          "HandlerName": "PollyCircuitBreaker",
+          "Args": {
+            "ExceptionsAllowedBeforeBreaking": 5,
+            "DurationOfBreak": 30000
+          }
+        } // Wyłącznik nadprądowy: wyłącza po 5 błędach na 30 sekund
+      ],
+
+      "RateLimitOptions": { // Limitowanie żądań (zapobieganie przeciążeniu API)
+        "ClientWhitelist": [], // (Opcjonalnie) Lista adresów IP, które są zwolnione z limitu
+        "EnableRateLimiting": true, // Włączenie limitowania żądań
+        "Period": "1m", // Okres czasu, w którym obowiązuje limit (1 minuta)
+        "Limit": 100 // Maksymalna liczba żądań w okresie
+      },
+      "LoadBalancerOptions": { // Równoważenie obciążenia (jeśli masz wiele instancji ContactList.API)
+        "Type": "RoundRobin" // Podstawowy algorytm Round Robin
+      },
+      "QoSOptions": { // Quality of Service (dodatkowe opcje odporności)
+        "ExceptionsAllowedBeforeBreaking": 3, // Ile błędów tolerować przed przerwaniem obwodu
+        "DurationOfBreak": 10, // Czas trwania przerwy w sekundach
+        "TimeoutValue": 30000 // Limit czasu żądania w milisekundach
+      },
+      "FileCacheOptions": { // Cache'owanie odpowiedzi (przyspieszenie odpowiedzi na powtarzające się żądania)
+        "TtlSeconds": 30, // Czas życia (TTL) cache'owanej odpowiedzi w sekundach
+        "Region": "contactlist" // Nazwa regionu cache'a
+      },
+      "HttpHandlerOptions": { // Opcje klienta HTTP
+        "AllowAutoRedirect": false, // Wyłącz automatyczne przekierowania
+        "UseCookieContainer": false, // Nie używaj kontenera ciasteczek
+        "UseTracing": true // Włącz śledzenie żądań
+      }
+    }
+  ],
+  "GlobalConfiguration": { // Ustawienia globalne dla bramy API
+    "BaseUrl": "https://localhost:7000" // Adres URL bramy API (ContactList.Gateway)
+  }
+}
