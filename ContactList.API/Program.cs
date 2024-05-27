@@ -11,19 +11,21 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using Serilog.Events;
 using Serilog;
+using Serilog.Events;
+using Serilog.Formatting.Compact;
 using System.Text;
 using ContactList.API.Helpers;
 
+
+
 var builder = WebApplication.CreateBuilder(args);
 // Konfiguracja Serilog
-Log.Logger = new LoggerConfiguration()
+builder.Host.UseSerilog((ctx, lc) => lc
     .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
     .Enrich.FromLogContext()
     .WriteTo.Console()
-    .WriteTo.File("Logs/log-.txt", rollingInterval: RollingInterval.Day)
-    .CreateLogger();
+    .WriteTo.File(new RenderedCompactJsonFormatter(), "Logs/log-.txt", rollingInterval: RollingInterval.Day));//.WriteTo.File("C:\\Logs\\Assel\\log-.txt", rollingInterval: RollingInterval.Day)
 
 builder.Host.UseSerilog(); // Informujemy ASP.NET Core, aby u¿ywa³ Serilog jako systemu logowania
 

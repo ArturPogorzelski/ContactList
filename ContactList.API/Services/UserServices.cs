@@ -9,6 +9,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace ContactList.API.Services
 {
@@ -39,6 +40,11 @@ namespace ContactList.API.Services
             if (await _userRepository.GetByEmailAsync(registerRequestDto.Email) != null)
             {
                 throw new BadRequestException("Użytkownik o podanym adresie email już istnieje.");
+            }
+            // Walidacja siły hasła (przykład z wyrażeniem regularnym)
+            if (!Regex.IsMatch(registerRequestDto.Password, @"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$"))
+            {
+                throw new BadRequestException("Hasło nie spełnia wymagań dotyczących siły hasła. Hasło musi mieć conajmniej 8 znaków i zawierać co najmniej jedną dużą literę, jedną małą literę, jedną cyfrę i jeden znak specjalny.");
             }
 
             var user = _mapper.Map<User>(registerRequestDto);
