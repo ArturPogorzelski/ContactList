@@ -10,7 +10,7 @@ namespace ContactList.Infrastructure.Helpers
 {
     public static class RetryHelperStatic
     {
-
+        // Metoda generyczna do wykonania funkcji z automatycznym ponawianiem w przypadku błędów przemijających
         public static T ExecuteWithRetries<T>(Func<T> func, string operationName, int maxRetries = 3, int baseDelay = 1000)
         {
             int retries = 0;
@@ -20,22 +20,25 @@ namespace ContactList.Infrastructure.Helpers
             {
                 try
                 {
+                    // Wykonanie przekazanej funkcji
                     return func();
                 }
                 catch (Exception ex)
                 {
+                    // Sprawdzenie, czy błąd jest przemijający i czy nie przekroczono maksymalnej liczby prób
                     if (!IsTransient(ex) || retries >= maxRetries)
                     {
                         throw;
                     }
 
                     retries++;
-                    Thread.Sleep(delay);
-                    // delay *= 2; // Opcjonalne eksponencjalne zwiększanie opóźnienia
+                    Thread.Sleep(delay); // Czekanie przed kolejną próbą
+                                         // delay *= 2; // Opcjonalne: eksponencjalne zwiększanie opóźnienia
                 }
             }
         }
 
+        // Metoda wykonująca akcję bez zwracania wyniku z automatycznym ponawianiem
         public static void ExecuteWithRetries(Action action, string operationName, int maxRetries = 3, int baseDelay = 1000)
         {
             int retries = 0;
@@ -45,7 +48,7 @@ namespace ContactList.Infrastructure.Helpers
             {
                 try
                 {
-                    action();
+                    action(); // Wykonanie przekazanej akcji
                     break;
                 }
                 catch (Exception ex)
@@ -57,10 +60,11 @@ namespace ContactList.Infrastructure.Helpers
 
                     retries++;
                     Thread.Sleep(delay);
-                    // delay *= 2; // Opcjonalne eksponencjalne zwiększanie opóźnienia
                 }
             }
         }
+
+        // Asynchroniczna wersja metody generycznej do wykonania funkcji zwracającej Task<T>
         public static async Task<T> ExecuteWithRetriesAsync<T>(Func<Task<T>> funcAsync, string operationName, int maxRetries = 3, int baseDelay = 1000)
         {
             int retries = 0;
@@ -70,7 +74,7 @@ namespace ContactList.Infrastructure.Helpers
             {
                 try
                 {
-                    return await funcAsync();
+                    return await funcAsync(); // Wykonanie funkcji asynchronicznej
                 }
                 catch (Exception ex)
                 {
@@ -80,11 +84,12 @@ namespace ContactList.Infrastructure.Helpers
                     }
 
                     retries++;
-                    Thread.Sleep(delay);
-                    // delay *= 2; // Opcjonalne eksponencjalne zwiększanie opóźnienia
+                    Thread.Sleep(delay); // Czekanie w wersji synchronicznej (Thread.Sleep) zamiast Task.Delay w asynchronicznej
                 }
             }
         }
+
+        // Asynchroniczna wersja metody do wykonania akcji asynchronicznej bez zwracania wyniku
         public static async Task ExecuteWithRetriesAsync(Func<Task> actionAsync, string operationName, int maxRetries = 3, int baseDelay = 1000)
         {
             int retries = 0;
@@ -94,7 +99,7 @@ namespace ContactList.Infrastructure.Helpers
             {
                 try
                 {
-                    await actionAsync();
+                    await actionAsync(); // Wykonanie przekazanej akcji asynchronicznej
                     break;
                 }
                 catch (Exception ex)
@@ -105,33 +110,35 @@ namespace ContactList.Infrastructure.Helpers
                     }
 
                     retries++;
-                    Thread.Sleep(delay);
-                    // delay *= 2; // Opcjonalne eksponencjalne zwiększanie opóźnienia
+                    Thread.Sleep(delay); // Czekanie synchroniczne w kodzie asynchronicznym
                 }
             }
         }
+
+        // Metoda do określenia, czy błąd jest przemijający
         private static bool IsTransient(Exception exception)
         {
-            // Jeśli wyjątek jest wyjątkiem SQL, dokonujemy sprawdzenia na podstawie kodów błędów
+            // Sprawdzenie, czy wyjątek jest wyjątkiem SQL
             if (exception is SqlException sqlException)
             {
-                return TransientErrorNumbers.Contains(sqlException.Number);
+                return TransientErrorNumbers.Contains(sqlException.Number); // Czy kod błędu jest wśród przemijających
             }
 
-            // Dodanie obsługi DataException
+            // Obsługa DataException, które może zawierać wyjątek SQL jako pierwotny
             if (exception is DataException dataException && dataException.OriginalException is SqlException dataSqlEx)
             {
                 return TransientErrorNumbers.Contains(dataSqlEx.Number);
             }
 
-            // Dla wszystkich innych wyjątków zwracamy false
-            return false;
+            return false; // Dla innych typów wyjątków zwraca false
         }
+
+        // Zestawienie kodów błędów SQL uznawanych za przemijające
         private static readonly HashSet<int> TransientErrorNumbers = new HashSet<int>
-            {
-                // Lista kodów błędów SQL Server uznawanych za przemijające, w tym 1205
-                -2, 20, 64, 233, 10053, 10054, 10060, 10928, 10929, 40143, 40197, 40501, 40613, 41301, 41302, 41305, 41325, 41839, 49918, 49919, 49920, 1205
-            };
+    {
+        // Przykładowe kody błędów SQL Server
+        -2, 20, 64, 233, 10053, 10054, 10060, 10928, 10929, 40143, 40197, 40501, 40613, 41301, 41302, 41305, 41325, 41839, 49918, 49919, 49920, 1205
+    };
     }
 }
 //Sposób użycia 

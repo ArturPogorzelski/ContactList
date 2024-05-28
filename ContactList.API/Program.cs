@@ -20,37 +20,30 @@ using ContactList.API.Helpers;
 
 
 var builder = WebApplication.CreateBuilder(args);
-// Konfiguracja Serilog
+// Tworzy nowy obiekt WebApplicationBuilder, który s³u¿y do skonfigurowania i uruchomienia aplikacji webowej.
+
 builder.Host.UseSerilog((ctx, lc) => lc
     .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
     .Enrich.FromLogContext()
     .WriteTo.Console()
-    .WriteTo.File(new RenderedCompactJsonFormatter(), "Logs/log-.txt", rollingInterval: RollingInterval.Day));//.WriteTo.File("C:\\Logs\\Assel\\log-.txt", rollingInterval: RollingInterval.Day)
+    .WriteTo.File(new RenderedCompactJsonFormatter(), "Logs/log-.txt", rollingInterval: RollingInterval.Day));
 
-builder.Host.UseSerilog(); // Informujemy ASP.NET Core, aby u¿ywa³ Serilog jako systemu logowania
 
-builder.Services.AddDbContext<ContactListDbContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("ContactListDb")));
-
-builder.Services.Configure<JwtConfig>(builder.Configuration.GetSection("JwtConfig"));
-
-// Dodaj us³ugê autoryzacji i uwierzytelniania JWT
+// Konfiguracja uwierzytelniania JWT
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
+    .AddJwtBearer("GatewayAuthenticationScheme", options =>
     {
-        var jwtConfig = builder.Configuration.GetSection("JwtConfig").Get<JwtConfig>();
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtConfig.Secret)),
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["JwtConfig:Secret"])),
             ValidateIssuer = false,
             ValidateAudience = false,
-            ValidIssuer = jwtConfig.Issuer,
-            ValidAudience = jwtConfig.Audience,
+            ValidIssuer = builder.Configuration["JwtConfig:Issuer"],
+            ValidAudience = builder.Configuration["JwtConfig:Audience"],
             ClockSkew = TimeSpan.Zero
         };
     });
-
-
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "My API", Version = "v1" });
@@ -84,42 +77,82 @@ builder.Services.AddSwaggerGen(c =>
     c.OperationFilter<AuthorizationHeaderOperationFilter>();
 });
 
+// Konfiguruje Serilog jako system logowania dla hosta. Ustawia minimalny poziom logowania dla przestrzeni nazw Microsoft, dodaje kontekst logowania i konfiguruje zapisywanie logów do konsoli oraz do pliku z dziennym rolowaniem.
 
-builder.Services.AddPersistence(builder.Configuration); // Wywo³aj AddPersistence z konfiguracj¹
+builder.Host.UseSerilog();
+// Rejestruje Serilog jako domyœlny system logowania.
+
+builder.Services.AddDbContext<ContactListDbContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("ContactListDb")));
+// Dodaje i konfiguruje kontekst bazy danych Entity Framework Core dla po³¹czenia z baz¹ danych SQL Server.
+
+builder.Services.Configure<JwtConfig>(builder.Configuration.GetSection("JwtConfig"));
+// Pobiera konfiguracjê JWT z appsettings.json i rejestruje j¹ jako konfigurowaln¹ opcjê.
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        var jwtConfig = builder.Configuration.GetSection("JwtConfig").Get<JwtConfig>();
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtConfig.Secret)),
+            ValidateIssuer = false,
+            ValidateAudience = false,
+            ValidIssuer = jwtConfig.Issuer,
+            ValidAudience = jwtConfig.Audience,
+            ClockSkew = TimeSpan.Zero
+        };
+    });
+// Konfiguruje uwierzytelnianie przy u¿yciu JWT, w tym weryfikacjê klucza, wydawcy i odbiorcy tokena.
+
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "My API", Version = "v1" });
+    // Tworzy dokumentacjê Swagger dla API, zdefiniowan¹ dla wersji v1.
+    // Dalej konfiguruje uwierzytelnianie JWT w dokumentacji Swagger.
+});
+
+builder.Services.AddPersistence(builder.Configuration);
+// Metoda dodatkowa zdefiniowana przez u¿ytkownika, prawdopodobnie dodaje klasy dotycz¹ce persystencji danych.
+
 builder.Services.AddServices();
+// Rejestruje dodatkowe serwisy zdefiniowane przez u¿ytkownika.
+
 builder.Services.AddValidation();
+// Rejestruje serwisy odpowiedzialne za walidacjê danych wejœciowych.
+
 builder.Services.Configure<RetryPolicyConfig>(builder.Configuration.GetSection("RetryPolicy"));
-builder.Services.AddControllers();
-
-
-
+// Konfiguruje politykê ponawiania operacji w przypadku wyst¹pienia b³êdów.
 
 builder.Services.AddControllers();
-
-
-
+// Rejestruje serwisy odpowiedzialne za obs³ugê kontrolerów MVC.
 
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+// Konfiguruje AutoMapper, narzêdzie do mapowania danych miêdzy obiektami, u¿ywaj¹c wszystkich zgromadzonych w aplikacji.
+
 var app = builder.Build();
+// Buduje i konfiguruje aplikacjê.
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "My API V1"));
-}
+app.UseMiddleware<LoggingMiddleware>();
+// Rejestruje middleware do logowania.
 
-
-app.UseMiddleware<LoggingMiddleware>(); // Dodaj middleware logowania nag³ówków
-app.UseMiddleware<JwtDebugMiddleware>(); // Dodaj middleware Debugowania Jwt
+app.UseMiddleware<JwtDebugMiddleware>();
+// Rejestruje middleware do debugowania JWT.
 
 app.UseHttpsRedirection();
+// Wymusza przekierowanie HTTP na HTTPS.
+
 app.UseAuthentication();
+// W³¹cza mechanizmy uwierzytelniania.
 
 app.UseAuthorization();
+// W³¹cza mechanizmy autoryzacji.
+
 app.UseMiddleware<ErrorHandlingMiddleware>();
-//app.UseMiddleware<JwtMiddleware>();
+// Rejestruje middleware do obs³ugi b³êdów.
 
 app.MapControllers();
+// Mapuje kontrolery do endpointów HTTP.
 
 app.Run();
+// Uruchamia aplikacjê.

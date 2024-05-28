@@ -14,8 +14,9 @@ using Microsoft.Extensions.Options;
 
 namespace ContactList.API.Services
 {
-       public class ContactService : IContactService
+    public class ContactService : IContactService
     {
+        // Wstrzyknięte zależności
         private readonly IContactRepository _contactRepository;
         private readonly IUserRepository _userRepository;
         private readonly ICategoryRepository _categoryRepository;
@@ -26,15 +27,16 @@ namespace ContactList.API.Services
         private readonly RetryPolicyConfig _retryPolicyConfig;
         private readonly ILogger<ContactService> _logger;
 
+        // Konstruktor inicjalizujący wszystkie zależności
         public ContactService(
             IContactRepository contactRepository,
             IMapper mapper,
             IUserRepository userRepository,
             ICategoryRepository categoryRepository,
             ISubcategoryRepository subcategoryRepository,
-             ILogger<ContactService> logger,
-             IOptions<RetryPolicyConfig> retryPolicyConfig = null,
-            IRetryHelper retryHelper = null, 
+            ILogger<ContactService> logger,
+            IOptions<RetryPolicyConfig> retryPolicyConfig = null,
+            IRetryHelper retryHelper = null,
             IRetryStrategy retryStrategy = null
              )
         {
@@ -47,6 +49,7 @@ namespace ContactList.API.Services
             _retryPolicyConfig = retryPolicyConfig.Value;
             _retryHelper = retryHelper;
 
+            // Konfiguracja strategii ponawiania
             if (retryStrategy != null)
             {
                 _retryStrategy = retryStrategy;
@@ -60,24 +63,18 @@ namespace ContactList.API.Services
                 _retryStrategy = new RetryHelperStaticStrategy();
             }
         }
-        //public async Task<IEnumerable<ContactDto>> GetAllContactsAsync()
-        //{
-        //    var contacts = await _contactRepository.GetAllAsync();
-        //    return _mapper.Map<IEnumerable<ContactDto>>(contacts);
-        //}
+
+        // Pobranie wszystkich kontaktów z zastosowaniem polityki ponawiania
         public async Task<IEnumerable<ContactDto>> GetAllContactsAsync()
         {
             return await _retryStrategy.ExecuteWithRetriesAsync(async () =>
             {
                 var contacts = await _contactRepository.GetAllAsync();
                 return _mapper.Map<IEnumerable<ContactDto>>(contacts);
-            }, nameof(GetAllContactsAsync), _retryPolicyConfig.MaxRetries, _retryPolicyConfig.BaseDelay); 
+            }, nameof(GetAllContactsAsync), _retryPolicyConfig.MaxRetries, _retryPolicyConfig.BaseDelay);
         }
-        //public async Task<IEnumerable<ContactDto>> GetAllContactsForUserAsync(int userId)
-        //{
-        //    var contacts = await _contactRepository.GetAllForUserAsync(userId);
-        //    return _mapper.Map<IEnumerable<ContactDto>>(contacts);
-        //}
+
+        // Pobranie kontaktów dla konkretnego użytkownika z zastosowaniem polityki ponawiania
         public async Task<IEnumerable<ContactDto>> GetAllContactsForUserAsync(int userId)
         {
             return await _retryStrategy.ExecuteWithRetriesAsync(async () =>
@@ -87,15 +84,7 @@ namespace ContactList.API.Services
             }, nameof(GetAllContactsForUserAsync), _retryPolicyConfig.MaxRetries, _retryPolicyConfig.BaseDelay);
         }
 
-        //public async Task<ContactDto> GetContactByIdAsync(int id, int userId)
-        //{
-        //    var contact = await _contactRepository.GetByIdForUserAsync(id, userId);
-        //    if (contact == null)
-        //    {
-        //        throw new NotFoundException("Contact not found");
-        //    }
-        //    return _mapper.Map<ContactDto>(contact);
-        //}
+        // Pobranie szczegółów konkretnego kontaktu z zastosowaniem polityki ponawiania
         public async Task<ContactDto> GetContactByIdAsync(int id, int userId)
         {
             return await _retryStrategy.ExecuteWithRetriesAsync(async () =>
@@ -109,91 +98,56 @@ namespace ContactList.API.Services
             }, nameof(GetContactByIdAsync), _retryPolicyConfig.MaxRetries, _retryPolicyConfig.BaseDelay);
         }
 
-
-        //public async Task<ContactDto> CreateContactAsync(CreateContactRequestDto requestDto, int userId)
-        //{
-        //    // Sprawdzenie, czy użytkownik istnieje
-        //    var user = await _userRepository.GetByIdAsync(userId);
-        //    if (user == null)
-        //    {
-        //        throw new NotFoundException("User not found");
-        //    }
-
-        //    // Sprawdzenie, czy kategoria istnieje (oprócz kategorii "Other")
-        //    if (requestDto.CategoryId != 3 && await _categoryRepository.GetByIdAsync(requestDto.CategoryId) == null)
-        //    {
-        //        throw new NotFoundException("Category not found");
-        //    }
-
-        //    // Sprawdzenie, czy podkategoria istnieje (jeśli podano)
-        //    if (requestDto.SubcategoryId.HasValue && await _subcategoryRepository.GetByIdAsync(requestDto.SubcategoryId.Value) == null)
-        //    {
-        //        throw new NotFoundException("Subcategory not found");
-        //    }
-
-        //    // Mapowanie DTO na encję Contact
-        //    var contact = _mapper.Map<Contact>(requestDto);
-        //    contact.UserId = userId; // Ustawienie właściciela kontaktu
-
-        //    // Jeśli kategoria jest "Other", ustawiamy podaną wartość CustomSubcategory
-        //    if (requestDto.CategoryId == 3)
-        //    {
-        //        contact.CustomSubcategory = requestDto.CustomSubcategory;
-        //    }
-
-        //    // Dodanie kontaktu do bazy danych
-        //    contact = await _contactRepository.AddAsync(contact);
-
-        //    // Mapowanie encji Contact z powrotem na DTO
-        //    return _mapper.Map<ContactDto>(contact);
-        //}
+        // Tworzenie nowego kontaktu z odpowiednimi weryfikacjami i mapowaniem
         public async Task<ContactDto> CreateContactAsync(CreateContactRequestDto requestDto, int userId)
         {
             try
             {
-                // Sprawdzenie, czy użytkownik istnieje
                 var user = await _userRepository.GetByIdAsync(userId);
                 if (user == null)
                 {
                     throw new NotFoundException("User not found");
                 }
 
-                // Sprawdzenie, czy kategoria istnieje (oprócz kategorii "Other")
                 if (requestDto.CategoryId != 3 && await _categoryRepository.GetByIdAsync(requestDto.CategoryId) == null)
                 {
                     throw new NotFoundException("Category not found");
                 }
 
-                // Sprawdzenie, czy podkategoria istnieje (jeśli podano)
                 if (requestDto.SubcategoryId.HasValue && await _subcategoryRepository.GetByIdAsync(requestDto.SubcategoryId.Value) == null)
                 {
                     throw new NotFoundException("Subcategory not found");
                 }
 
-                // Mapowanie DTO na encję Contact
                 var contact = _mapper.Map<Contact>(requestDto);
                 contact.UserId = userId;
-                if (requestDto.CategoryId == 3)
-                {
-                    contact.CustomSubcategory = requestDto.CustomSubcategory;
-                }
-                else 
-                {
-                    contact.CustomSubcategory = string.Empty;
-                }
+
+                //if (requestDto.CategoryId == 3 && !string.IsNullOrEmpty(requestDto.CustomSubcategory))
+                //{
+                //    var subcategory = new Subcategory
+                //    {
+                //        CategoryId = requestDto.CategoryId,
+                //        Name = requestDto.CustomSubcategory
+                //    };
+                //    await _subcategoryRepository.AddAsync(subcategory);
+                //    contact.SubcategoryId = subcategory.SubcategoryId;
+                //}
+                //else
+                //{
+                //    contact.CustomSubcategory = string.Empty;
+                //}
 
                 contact = await _retryStrategy.ExecuteWithRetriesAsync(async () => await _contactRepository.AddAsync(contact), nameof(CreateContactAsync), _retryPolicyConfig.MaxRetries, _retryPolicyConfig.BaseDelay);
                 return _mapper.Map<ContactDto>(contact);
             }
-            catch (DbUpdateException ex) // Przechwytujemy wyjątek związany z bazą danych
+            catch (DbUpdateException ex)
             {
-                _logger.LogError(ex, "Błąd bazy danych podczas tworzenia kontaktu: {ErrorMessage}", ex.InnerException?.Message); // Dodajemy szczegółowy komunikat błędu
-                throw new DataException("Błąd bazy danych podczas tworzenia kontaktu.", ex);
+                _logger.LogError(ex, "Database error during contact creation: {ErrorMessage}", ex.InnerException?.Message);
+                throw new DataException("Database error during contact creation.", ex);
             }
         }
 
-        
-
+        // Aktualizacja istniejącego kontaktu z odpowiednimi weryfikacjami i mapowaniem
         public async Task UpdateContactAsync(int id, UpdateContactRequestDto requestDto, int userId)
         {
             try
@@ -204,17 +158,16 @@ namespace ContactList.API.Services
                     throw new NotFoundException("Contact not found");
                 }
 
-                // Sprawdzenie, czy kategoria istnieje (oprócz kategorii "Other")
                 if (requestDto.CategoryId != 3 && await _categoryRepository.GetByIdAsync(requestDto.CategoryId) == null)
                 {
                     throw new NotFoundException("Category not found");
                 }
 
-                // Sprawdzenie, czy podkategoria istnieje (jeśli podano)
                 if (requestDto.SubcategoryId.HasValue && await _subcategoryRepository.GetByIdAsync(requestDto.SubcategoryId.Value) == null)
                 {
                     throw new NotFoundException("Subcategory not found");
                 }
+
                 _mapper.Map(requestDto, contact);
                 if (requestDto.CategoryId == 3)
                 {
@@ -229,21 +182,12 @@ namespace ContactList.API.Services
             }
             catch (DbUpdateException ex)
             {
-                _logger.LogError(ex, "Błąd bazy danych podczas aktualizacji kontaktu: {ErrorMessage}", ex.InnerException?.Message); // Dodajemy szczegółowy komunikat błędu
-                throw new DataException("Błąd bazy danych podczas aktualizacji kontaktu.", ex);
+                _logger.LogError(ex, "Database error during contact update: {ErrorMessage}", ex.InnerException?.Message);
+                throw new DataException("Database error during contact update.", ex);
             }
         }
 
-        //public async Task DeleteContactAsync(int id, int userId)
-        //{
-        //    var contact = await _contactRepository.GetByIdForUserAsync(id, userId);
-        //    if (contact == null)
-        //    {
-        //        throw new NotFoundException("Contact not found");
-        //    }
-
-        //    await _contactRepository.DeleteAsync(id);
-        //}
+        // Usunięcie kontaktu z zastosowaniem polityki ponawiania
         public async Task DeleteContactAsync(int id, int userId)
         {
             var contact = await _contactRepository.GetByIdForUserAsync(id, userId);
