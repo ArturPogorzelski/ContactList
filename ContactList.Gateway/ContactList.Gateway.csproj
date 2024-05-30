@@ -7,13 +7,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.5" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.6" />
     <PackageReference Include="Microsoft.Extensions.Http.Polly" Version="8.0.5" />
     <PackageReference Include="Ocelot" Version="23.2.2" />
     <PackageReference Include="Ocelot.Cache.CacheManager" Version="23.2.2" />
     <PackageReference Include="Ocelot.Provider.Polly" Version="23.2.2" />
     <PackageReference Include="Polly" Version="8.4.0" />
-    <PackageReference Include="Polly.Extensions.Http" Version="3.0.0" />
     <PackageReference Include="Serilog.AspNetCore" Version="8.0.1" />
     <PackageReference Include="Serilog.Sinks.Console" Version="5.0.1" />
     <PackageReference Include="Serilog.Sinks.File" Version="5.0.0" />
