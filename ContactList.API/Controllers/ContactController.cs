@@ -48,7 +48,7 @@ public class ContactsController : ControllerBase
     {
         try
         {
-           
+
             var contacts = await _contactService.GetAllContactsAsync();
             _logger.LogInformation("Pobrano wszystkie kontakty.");
             return Ok(contacts);
@@ -121,7 +121,7 @@ public class ContactsController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Błąd podczas tworzenia kontaktu. Message: "+ ex.Message);
+            _logger.LogError(ex, "Błąd podczas tworzenia kontaktu. Message: " + ex.Message);
             return StatusCode(500, "Wystąpił błąd wewnętrzny serwera.Message: " + ex.Message);
         }
     }

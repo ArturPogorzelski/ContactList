@@ -1,4 +1,6 @@
 ﻿using AutoMapper;
+using ContactList.Application.Commands;
+using ContactList.Application.Commands.Contact;
 using ContactList.Core.Dtos;
 using ContactList.Core.Entities;
 
@@ -39,6 +41,36 @@ namespace ContactList.API.Helpers
 
             // Mapowanie dla logowania
             CreateMap<LoginRequestDto, User>();
+
+
+
+
+            CreateMap<Contact, ContactDto>()
+               .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => src.Category.Name))
+               .ForMember(dest => dest.SubcategoryName, opt => opt.MapFrom(src => src.Subcategory != null ? src.Subcategory.Name : src.CustomSubcategory));
+
+            CreateMap<CreateContactRequestDto, Contact>()
+                .ForMember(dest => dest.Category, opt => opt.Ignore())
+                .ForMember(dest => dest.Subcategory, opt => opt.Ignore());
+
+            CreateMap<UpdateContactRequestDto, Contact>()
+                .ForMember(dest => dest.Category, opt => opt.Ignore())
+                .ForMember(dest => dest.Subcategory, opt => opt.Ignore());
+
+            //CreateMap<User, UserDto>();
+            //CreateMap<RegisterRequestDto, User>();
+            //CreateMap<Category, CategoryDto>();
+            //CreateMap<Subcategory, SubcategoryDto>();
+            //CreateMap<Role, RoleDto>();
+
+           
+            
+            
+            
+            
+            
+
+
         }
     }
 }

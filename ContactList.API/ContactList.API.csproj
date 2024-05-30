@@ -9,6 +9,7 @@
   <ItemGroup>
     <PackageReference Include="AutoMapper" Version="13.0.1" />
     <PackageReference Include="FluentValidation" Version="11.9.1" />
+    <PackageReference Include="MediatR" Version="12.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.5" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.5">
       <PrivateAssets>all</PrivateAssets>
@@ -21,6 +22,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\ContactList.Application\ContactList.Application.csproj" />
     <ProjectReference Include="..\ContactList.Authentication\ContactList.Authentication.csproj" />
     <ProjectReference Include="..\ContactList.Core\ContactList.Core.csproj" />
     <ProjectReference Include="..\ContactList.Infrastructure\ContactList.Infrastructure.csproj" />

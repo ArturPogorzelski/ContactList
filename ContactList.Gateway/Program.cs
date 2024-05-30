@@ -1,4 +1,4 @@
-using ContactList.API.Helpers;
+using ContactList.Gateway.Helpers;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -7,6 +7,7 @@ using Ocelot.Middleware;
 using Ocelot.Provider.Polly;
 using Serilog;
 using Serilog.Events;
+using Serilog.Formatting.Compact;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);

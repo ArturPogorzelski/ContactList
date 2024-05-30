@@ -17,6 +17,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ContactList.UnitTests", "Co
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ContactList.IntegrationTests", "ContactList.IntegrationTests\ContactList.IntegrationTests.csproj", "{8A8344AE-92D3-4819-A108-68B8736745F0}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ContactList.Application", "ContactList.Application\ContactList.Application.csproj", "{A2AF3435-9DC1-43A0-AC0E-7F8A83A54598}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -51,6 +53,10 @@ Global
 		{8A8344AE-92D3-4819-A108-68B8736745F0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8A8344AE-92D3-4819-A108-68B8736745F0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8A8344AE-92D3-4819-A108-68B8736745F0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A2AF3435-9DC1-43A0-AC0E-7F8A83A54598}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A2AF3435-9DC1-43A0-AC0E-7F8A83A54598}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A2AF3435-9DC1-43A0-AC0E-7F8A83A54598}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A2AF3435-9DC1-43A0-AC0E-7F8A83A54598}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

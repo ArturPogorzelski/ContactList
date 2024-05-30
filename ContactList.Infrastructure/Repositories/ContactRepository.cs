@@ -44,6 +44,14 @@ namespace ContactList.Infrastructure.Repositories
                 .FirstOrDefaultAsync(c => c.ContactId == id && c.UserId == userId);
         }
 
+        
+             public async Task<Contact> GetByIdAsync(int id)
+        {
+            return await _context.Contacts
+                .Include(c => c.Category)
+                .Include(c => c.Subcategory)
+                .FirstOrDefaultAsync(c => c.ContactId == id);
+        }
         public async Task<Contact> AddAsync(Contact contact)
         {
             _context.Contacts.Add(contact);

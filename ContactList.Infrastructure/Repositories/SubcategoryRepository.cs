@@ -30,6 +30,10 @@ namespace ContactList.Infrastructure.Repositories
         {
             return await _context.Subcategories.FindAsync(id);
         }
+        public async Task<Subcategory> GetByNameAsync(string name)
+        {
+            return await _context.Subcategories.Where(x=>x.Name == name).FirstOrDefaultAsync();
+        }
 
         public async Task<Subcategory> AddAsync(Subcategory subcategory)
         {

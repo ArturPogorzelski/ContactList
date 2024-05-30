@@ -2,6 +2,7 @@
 using ContactList.Core.Interfaces;
 using ContactList.Infrastructure.Data.Contexts;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,10 +14,11 @@ namespace ContactList.Infrastructure.Repositories
     public class UserRepository : IUserRepository
     {
         private readonly ContactListDbContext _context;
-
-        public UserRepository(ContactListDbContext context)
+        private readonly ILogger<UserRepository> _logger;
+        public UserRepository(ContactListDbContext context, ILogger<UserRepository> logger)
         {
             _context = context;
+            _logger = logger;
         }
 
         public async Task<IEnumerable<User>> GetAllAsync()
@@ -37,7 +39,16 @@ namespace ContactList.Infrastructure.Repositories
         public async Task<User> AddAsync(User user)
         {
             _context.Users.Add(user);
-            await _context.SaveChangesAsync();
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateException ex)
+            {
+                _logger.LogError(ex, "An error occurred while saving changes: {InnerException}", ex.InnerException?.Message);
+                throw; // Rzucanie wyjątku dalej lub obsługa błędu
+            }
+            
             return user;
         }
 

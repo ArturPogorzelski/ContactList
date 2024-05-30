@@ -122,20 +122,20 @@ namespace ContactList.API.Services
                 var contact = _mapper.Map<Contact>(requestDto);
                 contact.UserId = userId;
 
-                //if (requestDto.CategoryId == 3 && !string.IsNullOrEmpty(requestDto.CustomSubcategory))
-                //{
-                //    var subcategory = new Subcategory
-                //    {
-                //        CategoryId = requestDto.CategoryId,
-                //        Name = requestDto.CustomSubcategory
-                //    };
-                //    await _subcategoryRepository.AddAsync(subcategory);
-                //    contact.SubcategoryId = subcategory.SubcategoryId;
-                //}
-                //else
-                //{
-                //    contact.CustomSubcategory = string.Empty;
-                //}
+                if (requestDto.CategoryId == 3 && !string.IsNullOrEmpty(requestDto.CustomSubcategory))
+                {
+                    var subcategory = new Subcategory
+                    {
+                        CategoryId = requestDto.CategoryId,
+                        Name = requestDto.CustomSubcategory
+                    };
+                    await _subcategoryRepository.AddAsync(subcategory);
+                    contact.SubcategoryId = subcategory.SubcategoryId;
+                }
+                else
+                {
+                    contact.CustomSubcategory = string.Empty;
+                }
 
                 contact = await _retryStrategy.ExecuteWithRetriesAsync(async () => await _contactRepository.AddAsync(contact), nameof(CreateContactAsync), _retryPolicyConfig.MaxRetries, _retryPolicyConfig.BaseDelay);
                 return _mapper.Map<ContactDto>(contact);

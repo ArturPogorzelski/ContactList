@@ -11,6 +11,7 @@ namespace ContactList.Core.Interfaces
     {
         Task<IEnumerable<Subcategory>> GetByCategoryIdAsync(int categoryId);
         Task<Subcategory> GetByIdAsync(int id);
+        Task<Subcategory> GetByNameAsync(string name);
         Task<Subcategory> AddAsync(Subcategory subcategory);
         Task UpdateAsync(Subcategory subcategory);
         Task DeleteAsync(int id);

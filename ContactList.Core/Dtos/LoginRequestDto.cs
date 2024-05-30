@@ -11,6 +11,10 @@ namespace ContactList.Core.Dtos
 
             [Required(ErrorMessage = "Hasło jest wymagane.")]
             public string Password { get; set; }
-        }
+
+            public string Token { get; set; }
+
+
+    }
    
 }

@@ -13,6 +13,7 @@ namespace ContactList.Core.Interfaces
         Task<IEnumerable<Contact>> GetAllAsync();
         Task<IEnumerable<Contact>> GetAllForUserAsync(int userId);
             Task<Contact> GetByIdForUserAsync(int id, int userId);
+        Task<Contact> GetByIdAsync(int id);
             Task<Contact> AddAsync(Contact contact);
             Task UpdateAsync(Contact contact);
             Task DeleteAsync(int id);

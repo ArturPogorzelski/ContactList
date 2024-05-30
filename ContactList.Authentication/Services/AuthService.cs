@@ -1,8 +1,12 @@
 ﻿using ContactList.Authentication.Models;
+using ContactList.Core.Dtos;
 using ContactList.Core.Entities;
 using ContactList.Core.Interfaces;
 using ContactList.Infrastructure.Data.Contexts;
+using ContactList.Infrastructure.Repositories;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System;
@@ -22,13 +26,15 @@ namespace ContactList.Authentication.Services
         private readonly JwtConfig _jwtConfig;
         private readonly ContactListDbContext _context;
         private readonly IRoleRepository _roleRepository;
+        private readonly IConfiguration _configuration;
 
         // Konstruktor inicjujący wszystkie zależności
-        public AuthService(IOptions<JwtConfig> jwtConfig, ContactListDbContext context, IRoleRepository roleRepository)
+        public AuthService(IOptions<JwtConfig> jwtConfig, ContactListDbContext context, IRoleRepository roleRepository, IConfiguration configuration)
         {
             _jwtConfig = jwtConfig.Value;
             _context = context;
             _roleRepository = roleRepository;
+            _configuration = configuration;
         }
 
         // Generowanie tokena JWT dla zalogowanego użytkownika
@@ -65,35 +71,37 @@ namespace ContactList.Authentication.Services
         }
 
         // Rejestracja nowego użytkownika
-        public async Task<(bool isSuccess, string message)> RegisterUser(User user, string password, IEnumerable<string> roleNames)
+        public async Task<(bool isValid, string error)> RegisterUser(User user, string password, IEnumerable<string> roleNames)
         {
-            if (await _context.Users.AnyAsync(u => u.Email == user.Email)) // Sprawdzenie czy użytkownik o danym emailu już istnieje
+            if (await _context.Users.AnyAsync(u => u.Email == user.Email))
             {
                 return (false, "Email address is already in use.");
             }
 
-            CreatePasswordHash(password, out byte[] passwordHash, out byte[] passwordSalt); // Hashowanie hasła
-            user.PasswordHash = Convert.ToBase64String(passwordHash); // Zapis hasła w formacie Base64
+            CreatePasswordHash(password, out byte[] passwordHash, out byte[] passwordSalt);
+            user.PasswordHash = Convert.ToBase64String(passwordHash);
             user.PasswordSalt = passwordSalt;
 
-            var roles = await _roleRepository.GetByNamesAsync(roleNames); // Pobranie ról na podstawie nazw
-            if (roles.Count() != roleNames.Count()) // Sprawdzenie czy wszystkie role są poprawne
+            var roles = await _roleRepository.GetByNamesAsync(roleNames);
+            if (roles.Count() != roleNames.Count())
             {
                 return (false, "One or more invalid role names provided.");
             }
 
-            user.UserRoles = roles.Select(r => new UserRole { Role = r }).ToList(); // Przypisanie ról do użytkownika
+            user.UserRoles = roles.Select(r => new UserRole { Role = r }).ToList();
 
-            _context.Users.Add(user); // Dodanie użytkownika do bazy danych
-            await _context.SaveChangesAsync(); // Zapis zmian
+            _context.Users.Add(user);
+            await _context.SaveChangesAsync();
 
-            return (true, "User registered successfully."); // Rejestracja zakończona sukcesem
+            return (true, "User registered successfully.");
         }
+
 
         // Pobranie użytkownika na podstawie emaila
         public async Task<User> GetUserByEmailAsync(string email)
         {
-            return await _context.Users.FirstOrDefaultAsync(x => x.Email == email);
+            return await _context.Users.Include(u => u.UserRoles).ThenInclude(ur => ur.Role) // Dołącz role użytkownika
+                                       .FirstOrDefaultAsync(u => u.Email == email);
         }
 
         // Tworzenie hasha hasła
@@ -117,5 +125,46 @@ namespace ContactList.Authentication.Services
                 return computedHashString.ToLower() == hashedPassword.ToLower(); // Porównanie hasha
             }
         }
+        public async Task<string> AuthenticateUserAsync(LoginRequestDto loginRequestDto)
+        {
+            var user = await GetUserByEmailAsync(loginRequestDto.Email); // Używamy metody GetUserByEmailAsync
+            if (user == null || !VerifyPassword(loginRequestDto.Password, user.PasswordHash, user.PasswordSalt))
+            {
+                throw new UnauthorizedAccessException("Nieprawidłowy adres e-mail lub hasło.");
+            }
+
+            // Generowanie tokenu JWT
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var key = Encoding.ASCII.GetBytes(_configuration["JwtConfig:Secret"]);
+            var claims = new List<Claim>
+    {
+        new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),
+        new Claim(JwtRegisteredClaimNames.Email, user.Email) // Dodajemy email do claims
+    };
+
+            // Dodawanie ról do claims
+            claims.AddRange(user.UserRoles.Select(role => new Claim(ClaimTypes.Role, role.Role.Name)));
+
+            var tokenDescriptor = new SecurityTokenDescriptor
+            {
+                Subject = new ClaimsIdentity(claims),
+                Expires = DateTime.UtcNow.AddMinutes(_jwtConfig.ExpirationInMinutes),
+                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+            };
+            var token = tokenHandler.CreateToken(tokenDescriptor);
+            return tokenHandler.WriteToken(token);
+        }
+        public (string Hash, byte[] Salt) HashPassword(string password)
+        {
+            using (var hmac = new HMACSHA512()) // Tworzy instancję algorytmu HMACSHA512
+            {
+                var salt = hmac.Key; // Generuje losową sól
+                var hash = hmac.ComputeHash(Encoding.UTF8.GetBytes(password)); // Oblicza hash hasła z użyciem soli
+
+                // Zwraca krotkę zawierającą hash (w formacie Base64) i sól
+                return (Convert.ToBase64String(hash), salt);
+            }
+        }
+
     }
 }

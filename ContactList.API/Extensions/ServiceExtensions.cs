@@ -11,6 +11,15 @@ using ContactList.Infrastructure.Repositories;
 using FluentValidation;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using ContactList.Application.Commands.Contact;
+using ContactList.Application.Handlers;
+using ContactList.Application.Queries.Contact;
+using MediatR;
+using ContactList.Application.Commands;
+using ContactList.Application.Queries;
+using ContactList.Application.Queries;
+using ContactList.Application.Handlers;
+using Microsoft.AspNetCore.Hosting;
 
 namespace ContactList.API.Extensions
 {
@@ -63,6 +72,28 @@ namespace ContactList.API.Extensions
             
 
 
+            return services;
+        }
+        public static IServiceCollection AddCQRSHandlers(this IServiceCollection services)
+        {
+            services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Program).Assembly));
+
+
+            
+            services.AddScoped<IRequestHandler<CreateContactCommand, ContactDto>, CreateContactCommandHandler>();
+            services.AddScoped<IRequestHandler<UpdateContactCommand, ContactDto>, UpdateContactCommandHandler>();
+            services.AddScoped<IRequestHandler<DeleteContactCommand, Unit>, DeleteContactCommandHandler>();
+            services.AddScoped<IRequestHandler<GetAllContactsForUserQuery, IEnumerable<ContactDto>>, GetAllContactsForUserQueryHandler>();
+            services.AddScoped<IRequestHandler<GetContactByIdQuery, ContactDto>, GetContactByIdQueryHandler>();
+            services.AddScoped<IRequestHandler<GetAllContactsQuery, IEnumerable<ContactDto>>, GetAllContactsQueryHandler>();
+
+           
+            services.AddScoped<IRequestHandler<RegisterUserCommand, UserDto>, RegisterUserCommandHandler>();
+
+            services.AddScoped<IRequestHandler<LoginUserCommand, LoginRequestDto>, LoginUserCommandHandler>();
+
+            services.AddScoped<IRequestHandler<GetUserByIdQuery, UserDto>, GetUserByIdQueryHandler>();
+            services.AddScoped<IRequestHandler<GetAllUserQuery, IEnumerable<UserDto>>, GetAllUserQueryHandler>();
             return services;
         }
     }

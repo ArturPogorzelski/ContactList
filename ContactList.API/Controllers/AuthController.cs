@@ -37,7 +37,7 @@ public class AuthController : ControllerBase
             return BadRequest(validationResult.Errors);
 
         var user = _mapper.Map<User>(registerRequestDto);
-        var (isValid, error) = await _authService.RegisterUser(user, registerRequestDto.Password, new[] { "Admin","User" });
+        var (isValid, error) = await _authService.RegisterUser(user, registerRequestDto.Password, new[] { "Admin", "User" });
         if (!isValid)
             return BadRequest(new { message = error });
 
